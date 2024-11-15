@@ -78,8 +78,11 @@ def main():
                 print("wh -  write byte")
                 print("rs -  reset file")
                 print("clc - calculate")
+                print("qt -  quit")
             case 'sb':
                 draw()
+            case 'qt':
+                break
             case 'clc':
                 if len(cmd) < 4:
                     print("usage: clc <value> <t1> <t2>")
