@@ -10,9 +10,9 @@ lines = 0x04
 print("ehex loading")
 r = {"\r": "\\r", "\n": "\\n", "\t": "\\t", "\x1b": "\\x1b", "\0": "\\0"}
 print("\x1b[2J\x1b[H", end='')
-if not os.path.exists(sys.argv[1]):
-    with open(sys.argv[1], 'wb') as f:
-        f.write('')
+
+argc = len(sys.argv)
+argv = sys.argv
 
 def load():
     global data
@@ -20,6 +20,14 @@ def load():
         data = list(f.read())
     print(f"loading")
 
+
+if argc == 2:
+    if not os.path.exists(sys.argv[1]):
+        with open(sys.argv[1], 'wb') as f:
+            f.write('')
+    load()
+else:
+    data = []
 def save():
     global data
     with open(sys.argv[1], 'wb') as f:
@@ -45,6 +53,8 @@ def draw():
     e = 0
     n = 0
     i = -1
+    data = [0] + data
+    print("note:\x1b[40m\x1b[30mfirst byte is fix, just ignore them\x1b[0m")
     for i, byte in enumerate(data):
         if i < start:
             continue
@@ -58,7 +68,7 @@ def draw():
         else:
             print(b, end=' ')
         if (i - start + 1) % 16 == 0 or (i - start) == 0:
-            ll = i - 16 + 1
+            ll = max(i - 15, 0)
             if not (i - start) == 0:
                 show_in_chars(ll, i + 2)
             start_addr = hex(max(ll, 0))
@@ -67,6 +77,8 @@ def draw():
             n += 1
         e += 1
     show_in_chars(max(i - 16 + 1, 0), i + 1)
+    data = data[1:]
+    print()
     print()
     return n
 
@@ -114,15 +126,25 @@ def main():
                     print("wb  -  write binary")
                     print("rs  -  reset file")
                     print("und -  undo last change")
+                    print("nul - init <value> bytes with zero")
                     print("clc - calculate")
                     print("ins - invert insert mode")
                     print("qt  -  quit")
                     print("cls - clear screen")
                 case 'sb':
                     draw()
-                case 'cls':
+                case 'cls' | 'c':
                     print('\x1b[H\x1b[2J', end='')
                     draw()
+                case 'nul':
+                    save_change()
+                    if len(sp) < 2:
+                        print("usage: nul <value>")
+                        continue
+                    if not sp[1].isnumeric():
+                        print("2 arg is not dec number")
+                        continue
+                    data += [0] * int(sp[1])
                 case 'ins':
                     insert = not insert
                     print(f"changing insert mode to {insert}")
@@ -139,7 +161,7 @@ def main():
                 case 'dtd':
                     dtop = False
                 case 'clc':
-                    if len(cmd) < 4:
+                    if len(sp) < 4:
                         print("usage: clc <value> <t1> <t2>")
                         print("supported: hex(h), oct(o), dec(d), bin(b), char(c), string(s, replace space with '/sp')")
                         continue
@@ -280,7 +302,6 @@ def main():
             print(f'\x1b[31m{e.__str__()}\x1b[0m')
             
 
-load()
 draw()
 
 main()
